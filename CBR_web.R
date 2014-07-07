@@ -80,6 +80,8 @@ DailyFunction <- function(name, fromDate, ToDate)  {
   
 }
 
+
+
 # Функция преобразования в результатов генерических функций Daily и Sec в итоговый датафрейм
 # аргументы: doc - XML-дерево (xmlInternalTreeParse) 
            #: 'headtag - тег первого уровня в ответе SOAP
@@ -100,6 +102,18 @@ Doc2Df <- function(doc, headtag){
                         
                         
 }
+
+#Параметры курсовой политики Банка России (как XMLDocument)
+Sp_fxpm_XML <- function(fromDate, DateTo){
+  doc <- SecFunction('Sp_fxpm_XML', fromDate, DateTo)
+  df <- Doc2Df(doc, 'SmoothingInterventions')
+  df <- Doc2Df(doc, 'Corridor')
+  df <- Doc2Df(doc, 'CumulativeVolume')
+  #не доделалано
+  
+}
+
+
 
 #Ставки межбанковского кредитного рынка (как xmlDocument)
 MKRXML <- function(fromDate, ToDate){
@@ -418,7 +432,8 @@ DVXML <-  function(fromDate, ToDate) {
   df <- Doc2Df(doc, 'DV')
   df[, 'Date']<- as.Date(as.POSIXct(df[, 'Date']))+1
   df<- df[,!(names(df) %in% 'VIDate')]
-  df[,2:5]<- apply(df[,2:5], 2, as.numeric)
+  df<- df[,!(names(df) %in% 'Vol_Gold')]
+  df[,2:ncol(df)]<- apply(df[,2:ncol(df)], 2, as.numeric)
   df <- xts((df[,-1]), order.by = df[,1])
   return(df)
 }
@@ -477,7 +492,7 @@ mrrf7DXML <- function(fromDate, ToDate) {
   doc <- DailyFunction('mrrf7DXML', fromDate, ToDate)
   df <- Doc2Df(doc, 'mr') 
   df[, 'D0']<- as.Date(as.POSIXct(df[, 'D0']))+1
-  df[,2]<- as.numeric(df[,2])
+  df[,2]<- as.numeric(as.character(df[,2]))
   df <- xts((df[,-1]), order.by = df[,1])
   return(df)
 }
@@ -487,7 +502,7 @@ FixedStav1DayXML <- function(OnDate, ToDate){
   doc <- SecFunction2('FixedStav1DayXML', OnDate, ToDate)
   df <- Doc2Df(doc, 'fs') 
   df[, 'D0']<- as.Date(as.POSIXct(df[, 'D0']))+1
-  df[,2]<- as.numeric(df[,2])
+  df[,2]<- as.numeric(as.character(df[,2]))
   df <- xts((df[,-1]), order.by = df[,1])
   return(df)
 }
@@ -503,10 +518,22 @@ NonMarketCreditXML <- function(OnDate, ToDate){
 }
 
 #Информация о предоставлении кредитов без обеспечения кредитным организациям (как XMLDocument)
-UnSecLoansXML <- function(DateFrom, DateTo){
+UnSecLoansXML <- function(DateFrom, c){
   doc <- SecFunction('UnSecLoansXML', DateFrom, DateTo)
-  df <- Doc2Df(doc, 'MP')
-  df[, 'MP_Date']<- as.Date(as.POSIXct(df[, 'MP_Date']))+1
+  df <- Doc2Df(doc, 'UL')
+  df[, 'PDate']<- as.Date(as.POSIXct(df[, 'PDate']))+1
+  df[, 'DEPOSIT_DATE']<- as.Date(as.POSIXct(df[, 'DEPOSIT_DATE']))+1
+  df[, 'MATURITY_DATE']<- as.Date(as.POSIXct(df[, 'MATURITY_DATE']))+1
+  df[,4:length(names(df))]<- apply(df[,4:length(names(df))], 2, as.numeric)
+  df <- xts((df[,-1]), order.by = df[,1])
+  return(df)
+}
+
+#Задолженность по обеспеченным кредитам Банка России (как XMLDocument)
+SecLoansDebtXML <- function(DateFrom, DateTo){
+  doc <- SecFunction2('SecLoansDebtXML', DateFrom, DateTo)
+  df <- Doc2Df(doc, 'SL')
+  df[, 'D0']<- as.Date(as.POSIXct(df[, 'D0']))+1
   df[,2:length(names(df))]<- apply(df[,2:length(names(df))], 2, as.numeric)
   df <- xts((df[,-1]), order.by = df[,1])
   return(df)
