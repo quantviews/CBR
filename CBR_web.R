@@ -9,7 +9,8 @@ require(reshape2)
 library(RColorBrewer)
 require(quantmod)
 require(PerformanceAnalytics)
-  
+require(dplyr)
+
 # Генерическая функция обращения к разделу Банка России для получения информации по рынку ценных бумаг 
 # http://cbr.ru/scripts/Root.asp?Prtid=SEC
 SecFunction <- function(name, DateFrom, DateTo)  {
@@ -106,12 +107,29 @@ Doc2Df <- function(doc, headtag){
 #Параметры курсовой политики Банка России (как XMLDocument)
 Sp_fxpm_XML <- function(fromDate, DateTo){
   doc <- SecFunction('Sp_fxpm_XML', fromDate, DateTo)
-  df <- Doc2Df(doc, 'SmoothingInterventions')
-  df <- Doc2Df(doc, 'Corridor')
-  df <- Doc2Df(doc, 'CumulativeVolume')
-  #не доделалано
+  df <- Doc2Df(doc, 'Data/Corridor')
+  df1 <- Doc2Df(doc, 'Data/SmoothingInterventions')
+  df2 <- Doc2Df(doc, 'Data/InternalRangesWidth')
+  df3 <- as.data.frame(sapply(getNodeSet(doc, paste0('//', 'D0')), xmlValue))
+  names(df3) <-'D0'
+  df4 <- as.data.frame(sapply(getNodeSet(doc, paste0('//', 'CumulativeVolume')), xmlValue))
+  names(df4) <-'CumulativeVolume'
+  df5 <- as.data.frame(sapply(getNodeSet(doc, paste0('//', 'TreasuryOrderVolulme')), xmlValue))
+  names(df5) <-'TreasuryOrderVolulme'
+  df <- cbind(df, df1, df2, df3, df4,df5)
+  
+  df[, 'D0']<- as.Date(as.POSIXct(df[, 'D0']))+1
+  dt <- as.Date(as.POSIXct(df[, 'D0']))+1
+  df <- select(df, -D0)
+  df <- apply(df,2, as.numeric)
+  df <- xts(df, order.by = dt)
+  return(df)
+  
   
 }
+
+
+
 
 
 
@@ -192,6 +210,7 @@ REPOXML <- function(DateFrom, DateTo){
 
 # Информация по аукционам ГКО-ОФЗ (как XMLDocument)
 # !!! только по 1 января 2013 года 
+
 AuctionsXML <-  function(DateFrom, DateTo){
   h <- basicTextGatherer()   #фунция для обработки http-запросов
   url <- 'http://cbr.ru/secinfo/secinfo.asmx'
@@ -403,6 +422,27 @@ Isoterm <- function(OnDate, ToDate, ValutaCode, I_Day){
    df[, 'val']<- as.numeric(df[, 'val'])
    return(df)
 }
+
+MainInfoXML <- function(){
+  name <- 'MainInfoXML'
+  h <- basicTextGatherer()   #фунция для обработки http-запросов
+  url <- 'http://www.cbr.ru/DailyInfoWebServ/DailyInfo.asmx'
+  #    сформировать тело SOAP запроса
+  body <-paste0('<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+                <soap:Body>
+                <',name,' xmlns="http://web.cbr.ru/">
+                </',name,'>
+                </soap:Body>
+                </soap:Envelope>')
+  HeaderFields=c(Accept="text/xml", Accept="multipart/*", SOAPAction=paste('"http://web.cbr.ru/', name,'"', sep = ''),
+                 'Content-Type' = "text/xml; charset=utf-8")
+  curlPerform(url = url, httpheader = HeaderFields, postfields = body, writefunction = h$update)
+  response <- h$value()      #получение ответа от сервера
+  doc <- xmlInternalTreeParse(response) # создание XML-дерева
+  
+}
+
 
 # Сальдо операций ЦБ РФ по предоставлению/абсорбированию ликвидности (XMLDocument)
 SaldoXML <- function(fromDate, ToDate) {
