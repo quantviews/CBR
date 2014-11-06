@@ -56,6 +56,28 @@ SecFunction2 <- function(name, OnDate, ToDate)  {
   return(doc)
   
 }
+
+SecFunction3 <- function(name, dt)  {
+  h <- basicTextGatherer()   #фунция для обработки http-запросов
+  url <- 'http://cbr.ru/secinfo/secinfo.asmx'
+  #    сформировать тело SOAP запроса
+  body <-paste0('<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+                <soap:Body>
+                <',name,' xmlns="http://web.cbr.ru/">
+                <dt>', dt,'</dt>
+                
+                </',name,'>
+                </soap:Body>
+                </soap:Envelope>')
+  HeaderFields=c(Accept="text/xml", Accept="multipart/*", SOAPAction=paste('"http://web.cbr.ru/', name,'"', sep = ''),
+                 'Content-Type' = "text/xml; charset=utf-8")
+  curlPerform(url = url, httpheader = HeaderFields, postfields = body, writefunction = h$update)
+  response <- h$value()      #получение ответа от сервера
+  doc <- xmlInternalTreeParse(response) # создание XML-дерева
+  return(doc)
+  
+}
 # Генерическая функция обращения к разделу Банка России "Веб - сервис для получения ежедневных данных"г 
 # http://cbr.ru/scripts/Root.asp?Prtid=DWS
 
@@ -104,6 +126,12 @@ Doc2Df <- function(doc, headtag){
                         
 }
 
+#Условия проведения Банком России операций по предоставлению кредитным организациям обеспеченных кредитов Банка России по фиксированным процентным ставкам (кроме кредитов овернайт)
+creditco <- function(dt){
+  doc <- SecFunction3('creditco', dt)
+  Doc2Df(doc, 'credit')
+}
+
 #Параметры курсовой политики Банка России (как XMLDocument)
 Sp_fxpm_XML <- function(fromDate, DateTo){
   doc <- SecFunction('Sp_fxpm_XML', fromDate, DateTo)
@@ -120,7 +148,7 @@ Sp_fxpm_XML <- function(fromDate, DateTo){
   
   df[, 'D0']<- as.Date(as.POSIXct(df[, 'D0']))+1
   dt <- as.Date(as.POSIXct(df[, 'D0']))+1
-  df <- select(df, -D0)
+  df$D0 <- NULL
   df <- apply(df,2, as.numeric)
   df <- xts(df, order.by = dt)
   return(df)
@@ -166,6 +194,16 @@ RepoSessionXML <- function(DateFrom, DateTo){
   df <- xts((df[,-1]), order.by = df[,1])
   return(df)
   
+}
+
+#Параметры аукционов прямого РЕПО (как XMLDocument)
+DirRepoAuctionParamXML <- function(OnDate, ToDate){
+  doc <- SecFunction2('DirRepoAuctionParamXML', OnDate, ToDate)
+  df <- Doc2Df(doc, 'DR')
+  df[, 'D0']<- as.Date(as.POSIXct(df[, 'D0']))+1
+  df <- xts((df[,-1]), order.by = df[,1])
+  return(df)
+
 }
 
 # MosPrime Rate (как XMLDocument)
