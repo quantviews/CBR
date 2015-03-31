@@ -11,6 +11,9 @@ require(quantmod)
 require(PerformanceAnalytics)
 require(dplyr)
 
+#install.packages("SSOAP", repos = "http://www.omegahat.org/R", 
+ #                dependencies = TRUE, 
+  #               type = "source")
 # Генерическая функция обращения к разделу Банка России для получения информации по рынку ценных бумаг 
 # http://cbr.ru/scripts/Root.asp?Prtid=SEC
 SecFunction <- function(name, DateFrom, DateTo)  {
