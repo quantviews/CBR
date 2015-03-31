@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 # Салихов Марсель (quantviews.blogspot.ru)
 require(XML)
 require(RCurl)
@@ -11,12 +11,14 @@ require(reshape2)
 library(RColorBrewer)
 require(quantmod)
 require(PerformanceAnalytics)
-require(dplyr)
+#require(dplyr)
 
 # установка пакета SSOAP, если необходимо
-#install.packages("SSOAP", repos = "http://www.omegahat.org/R", 
+# install.packages("SSOAP", repos = "http://www.omegahat.org/R", 
 #                dependencies = TRUE, 
 #               type = "source")
+
+
 # Генерическая функция обращения к разделу Банка России для получения информации по рынку ценных бумаг 
 # http://cbr.ru/scripts/Root.asp?Prtid=SEC
 SecFunction <- function(name, DateFrom, DateTo)  {
@@ -84,6 +86,30 @@ SecFunction3 <- function(name, dt)  {
   return(doc)
   
 }
+
+
+SecFunction4 <- function(name, dt)  {
+  h <- basicTextGatherer()   #фунция для обработки http-запросов
+  url <- 'http://cbr.ru/secinfo/secinfo.asmx'
+  #    сформировать тело SOAP запроса
+  body <-paste0('<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+                <soap:Body>
+                <',name,' xmlns="http://web.cbr.ru/">
+                <OnDate>', dt,'</OnDate>
+                
+                </',name,'>
+                </soap:Body>
+                </soap:Envelope>')
+  HeaderFields=c(Accept="text/xml", Accept="multipart/*", SOAPAction=paste('"http://web.cbr.ru/', name,'"', sep = ''),
+                 'Content-Type' = "text/xml; charset=utf-8")
+  curlPerform(url = url, httpheader = HeaderFields, postfields = body, writefunction = h$update)
+  response <- h$value()      #получение ответа от сервера
+  doc <- xmlInternalTreeParse(response) # создание XML-дерева
+  return(doc)
+  
+}
+
 # Генерическая функция обращения к разделу Банка России "Веб - сервис для получения ежедневных данных"г 
 # http://cbr.ru/scripts/Root.asp?Prtid=DWS
 
@@ -110,7 +136,6 @@ DailyFunction <- function(name, fromDate, ToDate)  {
 }
 
 
-
 # Функция преобразования в результатов генерических функций Daily и Sec в итоговый датафрейм
 # аргументы: doc - XML-дерево (xmlInternalTreeParse) 
            #: 'headtag - тег первого уровня в ответе SOAP
@@ -130,6 +155,14 @@ Doc2Df <- function(doc, headtag){
                         return(df)
                         
                         
+}
+
+#Срочная структура процентных ставок (кривая бескупонной доходности) (как DataSet)
+GCurve <- function(onDate){
+  doc <- SecFunction4('GCurve', onDate)
+  df <- Doc2Df(doc, 'GC')
+  names(df)[1] <- 'year'
+  return(df)
 }
 
 #Итоги аукциона прямого РЕПО в иностранной валюте (как XMLDocument)
@@ -564,11 +597,13 @@ OstatDynamicXML <- function(fromDate, ToDate) {
 }
 
 #Ставка ROISfix (XMLDocument)
+# Задолженность кредитных организаций перед Банком России по операциям прямого РЕПО (как xmlDocument)
+
 Repo_debtXML <- function(fromDate, ToDate) {
   doc <- DailyFunction('Repo_debtXML', fromDate, ToDate)
   df <- Doc2Df(doc, 'RD') 
   df[, 'Date']<- as.Date(as.POSIXct(df[, 'Date']))+1
-  df[,2]<- as.numeric(df[,2])
+  df[,-1] <- apply(df[,-1], 2, as.numeric)
   df <- xts((df[,-1]), order.by = df[,1])
   return(df)
 }
@@ -634,7 +669,7 @@ SecLoansDebtXML <- function(DateFrom, DateTo){
   df[,2:length(names(df))]<- apply(df[,2:length(names(df))], 2, as.numeric)
   df <- xts((df[,-1]), order.by = df[,1])
   return(df)
-=======
+#=======
 require(XML)
 require(RCurl)
 require(SSOAP)
@@ -1255,5 +1290,6 @@ SecLoansDebtXML <- function(DateFrom, DateTo){
   df[,2:length(names(df))]<- apply(df[,2:length(names(df))], 2, as.numeric)
   df <- xts((df[,-1]), order.by = df[,1])
   return(df)
->>>>>>> b320dc84cc1e6f517b379d4efa97dda87512d82c
+
+}
 }
