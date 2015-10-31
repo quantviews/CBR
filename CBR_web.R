@@ -165,6 +165,32 @@ GCurve <- function(onDate){
   return(df)
 }
 
+Isoterm <- function(onDate, ToDate, I_Day){
+  name <- 'Isoterm'
+  h <- basicTextGatherer()   #фунция для обработки http-запросов
+  url <- 'http://cbr.ru/secinfo/secinfo.asmx'
+  #    сформировать тело SOAP запроса
+  body <-paste0('<?xml version="1.0" encoding="utf-8"?>
+                <soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+                <soap:Body>
+                <',name,' xmlns="http://web.cbr.ru/">
+                <OnDate>', OnDate,'</OnDate>
+                <ToDate>', ToDate,'</ToDate>
+                <I_Day>', I_Day,'</I_Day>
+                </',name,'>
+                </soap:Body>
+                </soap:Envelope>')
+  HeaderFields=c(Accept="text/xml", Accept="multipart/*", SOAPAction=paste('"http://web.cbr.ru/', name,'"', sep = ''),
+                 'Content-Type' = "text/xml; charset=utf-8")
+  curlPerform(url = url, httpheader = HeaderFields, postfields = body, writefunction = h$update)
+  response <- h$value()      #получение ответа от сервера
+  doc <- xmlInternalTreeParse(response) # создание XML-дерева
+  df[, 'Dt']<- as.Date(as.POSIXct(df[, 'Dt']))+1
+  df <- Doc2Df(doc, 'It')
+  df[, 'day']<- as.Date(as.POSIXct(df[, 'day']))+1
+  return(df)
+}
+
 #Итоги аукциона прямого РЕПО в иностранной валюте (как XMLDocument)
 REPOFXXML <- function(DateFrom, DateTo){
   doc <- SecFunction('REPOFXXML', DateFrom, DateTo)
