@@ -162,10 +162,12 @@ GCurve <- function(onDate){
   doc <- SecFunction4('GCurve', onDate)
   df <- Doc2Df(doc, 'GC')
   names(df)[1] <- 'year'
+  df <- as.data.frame(apply(df,2, as.numeric))
   return(df)
 }
 
 Isoterm <- function(onDate, ToDate, I_Day){
+  if(!onDate<ToDate){stop('Dates sequence error')}
   name <- 'Isoterm'
   h <- basicTextGatherer()   #фунция для обработки http-запросов
   url <- 'http://cbr.ru/secinfo/secinfo.asmx'
@@ -185,9 +187,10 @@ Isoterm <- function(onDate, ToDate, I_Day){
   curlPerform(url = url, httpheader = HeaderFields, postfields = body, writefunction = h$update)
   response <- h$value()      #получение ответа от сервера
   doc <- xmlInternalTreeParse(response) # создание XML-дерева
-  df[, 'Dt']<- as.Date(as.POSIXct(df[, 'Dt']))+1
   df <- Doc2Df(doc, 'It')
   df[, 'day']<- as.Date(as.POSIXct(df[, 'day']))+1
+  df$val <- as.numeric(as.character(df$val))
+  df <- xts(df$val, order.by = df$day)
   return(df)
 }
 
@@ -312,6 +315,8 @@ MosPrimeXML <- function(DateFrom, DateTo){
 #   </xs:sequence>
   
 REPOXML <- function(DateFrom, DateTo){
+  if(!DateFrom<DateTo){stop('Dates sequence error')}
+  
   doc <- SecFunction('REPOXML', DateFrom, DateTo)
   df <- Doc2Df(doc, 'RP')
   df[, 'Dt']<- as.Date(as.POSIXct(df[, 'Dt']))+1
@@ -372,6 +377,7 @@ AuctionsXML <-  function(DateFrom, DateTo){
 # База данных по купонным выплатам и погашениям (как XMLDocument)
 # Cхема: http://www.cbr.ru/scripts/SecInfo_XSD/Coupons.xsd
 CouponsXML <- function(DateFrom, DateTo){
+  if(!DateFrom<DateTo){stop('Dates sequence error')}
   doc <- SecFunction('CouponsXML', DateFrom, DateTo)
   df <- Doc2Df(doc, 'CP')
    h <- basicTextGatherer()   #фунция для обработки http-запросов
@@ -453,6 +459,7 @@ GKOOFZ_AnalitXML <- function(DateFrom, DateTo){
    
 }
 
+
 # ---------------------------------------------------------------------------------------------
 # Факторы формирования ликвидности банковского сектора (как XMLDocument)
 # http://www.cbr.ru/scripts/SecInfo_XSD/Flikvid.xsd
@@ -478,6 +485,7 @@ FlikvidXML <- function(OnDate, ToDate){
 
 # Получение динамики ежедневных курсов валюты (как XMLDocument)
 GetCursDynamicXML <- function(FromDate, ToDate, ValutaCode){
+  if(!FromDate<ToDate){stop('Dates sequence error')}
   h <- basicTextGatherer()
    url <- 'http://www.cbr.ru/DailyInfoWebServ/DailyInfo.asmx'
    body <-paste( 
@@ -508,36 +516,36 @@ GetCursDynamicXML <- function(FromDate, ToDate, ValutaCode){
 
 # Функция: Срочная структура процентных ставок (Изотермный ряд бескупонной доходности) (как DataSet)
 # Схема: http://www.cbr.ru/scripts/SecInfo_XSD/Isoterm.xsd
-Isoterm <- function(OnDate, ToDate, ValutaCode, I_Day){
-   h <- basicTextGatherer()
-   url <- 'http://www.cbr.ru/secinfo/secinfo.asmx'
-   body <-paste('<?xml version="1.0" encoding="utf-8"?>
-<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
-  <soap:Body>
-    <Isoterm xmlns="http://web.cbr.ru/">
-      <OnDate>', OnDate,'</OnDate>
-      <ToDate>', ToDate,'</ToDate>
-      <I_Day>', I_Day,'</I_Day>
-    </Isoterm>
-  </soap:Body>
-</soap:Envelope>')
-   HeaderFields=c(Accept="text/xml", Accept="multipart/*", SOAPAction='"http://web.cbr.ru/Isoterm"',
-                  'Content-Type' = "text/xml; charset=utf-8")
-   curlPerform(url = url, httpheader = HeaderFields, postfields = body, writefunction = h$update)
-   response <- h$value()     
-   doc <- xmlInternalTreeParse(response)
-   cleanup <- getNodeSet(doc, '//It')
-   vars <- names(cleanup[[1]])
-   df <- as.data.frame(matrix(nrow =length(cleanup), ncol = length(vars), dimnames = list(NULL, vars)))
-   for (i in 1:length(vars)){
-      cur <- vars[i]
-      cc <- getNodeSet(doc, paste('//',cur, sep =''))
-      df[,i] <- sapply(cc, xmlValue)
-   }
-   df[, 'day']<- as.Date(as.POSIXct(df[, 'day']))+1
-   df[, 'val']<- as.numeric(df[, 'val'])
-   return(df)
-}
+# Isoterm <- function(OnDate, ToDate, ValutaCode, I_Day){
+#    h <- basicTextGatherer()
+#    url <- 'http://www.cbr.ru/secinfo/secinfo.asmx'
+#    body <-paste('<?xml version="1.0" encoding="utf-8"?>
+# <soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+#   <soap:Body>
+#     <Isoterm xmlns="http://web.cbr.ru/">
+#       <OnDate>', OnDate,'</OnDate>
+#       <ToDate>', ToDate,'</ToDate>
+#       <I_Day>', I_Day,'</I_Day>
+#     </Isoterm>
+#   </soap:Body>
+# </soap:Envelope>')
+#    HeaderFields=c(Accept="text/xml", Accept="multipart/*", SOAPAction='"http://web.cbr.ru/Isoterm"',
+#                   'Content-Type' = "text/xml; charset=utf-8")
+#    curlPerform(url = url, httpheader = HeaderFields, postfields = body, writefunction = h$update)
+#    response <- h$value()     
+#    doc <- xmlInternalTreeParse(response)
+#    cleanup <- getNodeSet(doc, '//It')
+#    vars <- names(cleanup[[1]])
+#    df <- as.data.frame(matrix(nrow =length(cleanup), ncol = length(vars), dimnames = list(NULL, vars)))
+#    for (i in 1:length(vars)){
+#       cur <- vars[i]
+#       cc <- getNodeSet(doc, paste('//',cur, sep =''))
+#       df[,i] <- sapply(cc, xmlValue)
+#    }
+#    df[, 'day']<- as.Date(as.POSIXct(df[, 'day']))+1
+#    df[, 'val']<- as.numeric(df[, 'val'])
+#    return(df)
+# }
 
 MainInfoXML <- function(){
   name <- 'MainInfoXML'
