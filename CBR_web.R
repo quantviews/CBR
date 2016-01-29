@@ -5,7 +5,7 @@ require(RCurl)
 require(SSOAP)
 require(xts)
 require(ggplot2)
-require(gridExtra)
+require(dplyr)
 library(scales)
 require(reshape2)
 library(RColorBrewer)
@@ -157,6 +157,20 @@ Doc2Df <- function(doc, headtag){
                         
 }
 
+
+# Задолженность кредитных организаций перед Банком России по операциям РЕПО в иностранной валюте (XMLDocument)
+#
+RepoDebtUSDXML <- function(fromDate, ToDate){
+  doc <- DailyFunction('RepoDebtUSDXML', fromDate, ToDate)
+  df <- Doc2Df(doc, 'rd')
+  df[, 'D0']<- as.Date(as.POSIXct(df[, 'D0']))+1
+  df <- xts(apply(select(df,-D0),2,as.numeric), order.by = df$D0)
+  return(df)
+  
+}
+
+
+
 #Срочная структура процентных ставок (кривая бескупонной доходности) (как DataSet)
 GCurve <- function(onDate){
   doc <- SecFunction4('GCurve', onDate)
@@ -236,10 +250,6 @@ Sp_fxpm_XML <- function(fromDate, DateTo){
   
   
 }
-
-
-
-
 
 
 #Ставки межбанковского кредитного рынка (как xmlDocument)
