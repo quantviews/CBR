@@ -1,4 +1,3 @@
-
 # Салихов Марсель (quantviews.blogspot.ru)
 require(XML)
 require(RCurl)
@@ -156,6 +155,30 @@ Doc2Df <- function(doc, headtag){
                         
                         
 }
+
+#Депозиты банков в Банке России (млн. руб) (как xmlDocument)
+
+OstatDepoXML <- function(fromDate, ToDate){
+  doc <- DailyFunction('OstatDepoXML', fromDate, ToDate)
+  df <- Doc2Df(doc, 'odr')
+  df[, 'D0']<- as.Date(as.POSIXct(df[, 'D0']))+1
+  df <- xts(apply(select(df,-D0),2,as.numeric), order.by = df$D0)
+  return(df)
+  
+}
+
+#Стоимость бивалютной корзины (как xmlDocument)
+# http://www.cbr.ru/DailyInfoWebServ/DailyInfo.asmx?op=BiCurBaseXML
+
+BiCurBaseXML <- function(fromDate, ToDate){
+  doc <- DailyFunction('BiCurBaseXML', fromDate, ToDate)
+  df <- Doc2Df(doc, 'BCB')
+  df[, 'D0']<- as.Date(as.POSIXct(df[, 'D0']))+1
+  df <- xts(apply(select(df,-D0),2,as.numeric), order.by = df$D0)
+  return(df)
+  
+}
+
 
 
 # Задолженность кредитных организаций перед Банком России по операциям РЕПО в иностранной валюте (XMLDocument)
