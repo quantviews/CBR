@@ -1,21 +1,19 @@
 # Салихов Марсель (quantviews.blogspot.ru)
-require(XML)
-require(RCurl)
-require(SSOAP)
-require(xts)
-require(ggplot2)
-require(dplyr)
-library(scales)
-require(reshape2)
-library(RColorBrewer)
-require(quantmod)
-require(PerformanceAnalytics)
-#require(dplyr)
+# функции для получения данных с технических ресурсов Банка России (http://www.cbr.ru/scripts/Root.asp)
+
+if(!require(XML)){install.packages("XML")};require(XML)
+if(!require(RCurl)){install.packages("RCurl")};require(RCurl)
+if(!require(SSOAP)){install.packages("SSOAP", repos = "http://www.omegahat.org/R", dependencies = TRUE, type = "source")};require(SSOAP)
+if(!require(xts)){install.packages("xts")};require(xts)
+if(!require(ggplot2)){install.packages("ggplot2")};require(ggplot2)
+if(!require(dplyr)){install.packages("dplyr")};require(dplyr)
+if(!require(RColorBrewer)){install.packages("RColorBrewer")};require(RColorBrewer)
+if(!require(quantmod)){install.packages("quantmod")};require(quantmod)
+if(!require(PerformanceAnalytics)){install.packages("PerformanceAnalytics")};require(PerformanceAnalytics)
+
 
 # установка пакета SSOAP, если необходимо
-# install.packages("SSOAP", repos = "http://www.omegahat.org/R", 
-#                dependencies = TRUE, 
-#               type = "source")
+# install.packages("SSOAP", repos = "http://www.omegahat.org/R", dependencies = TRUE, type = "source")
 
 
 # Генерическая функция обращения к разделу Банка России для получения информации по рынку ценных бумаг 
