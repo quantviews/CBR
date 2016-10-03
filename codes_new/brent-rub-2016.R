@@ -36,6 +36,7 @@ eur <- (GetCursDynamicXML(start.date, end.date, 'R01239')) #евро
 basket <- (merge(usd, eur)) # объединить вместе
 basket$basket <- basket$eur * 0.45 + basket$usd * 0.55 # бивалютная корзина
 basket.m <- aggregate((basket), as.yearmon, mean, na.rm=TRUE ) # среднемесячные значения для курсов 
+basket.y <- aggregate((basket), as.year, mean, na.rm=TRUE ) # среднемесячные значения для курсов 
 
 df <- merge.xts(brent[,4], usd)
 names(df) <- c('brent', 'usd')
@@ -59,7 +60,7 @@ p <- ggplot(data = buffer, aes(x=brent, y = usd, col = year))
 p<- p + geom_point()+stat_smooth(method = 'lm', formula = y ~ log(x))+theme_minimal(base_size = 8)
 
 p <- p <- p+labs(x=' Brent, $/barrel', y= 'RUB/USD')
-p <- p+annotate('point', x = last.brent, y = last.usd,  colour = "red", size = 5)+
+p <- p+annotate('point', x = last.brent, y = last.usd,  colour = "red", size = 4)+
   annotate('text', x = last.brent, y = last.basket, 
            label = paste0(' ', last.date), vjust = 2, colour= 'red')
 p <- p + theme(legend.title = element_blank()) + theme(legend.position=c(.8, .8))
@@ -69,5 +70,36 @@ p <- p +  scale_colour_manual(values=hse_colours)
 p
 
 
-ggsave(filename = paste0('fig/brent-rub - ', end.date, '.png'),width = 14, height=6.2, units = 'cm', dpi = 300)
+ggsave(filename = paste0('fig/brent-rub - ', end.date, '.png'),width = 14, height=7, units = 'cm', dpi = 300)
 ggsave(filename = paste0('fig/brent-rub - ', end.date, '.emf'),width = 14, height=6.2, units = 'cm')
+
+
+# log returns and rolling correlations
+
+if(!require(PerformanceAnalytics)){install.packages("PerformanceAnalytics")};require(PerformanceAnalytics)
+
+
+head(df)
+ret <- Return.calculate(df[,1],method = 'log') # сaculate returns
+ret <- merge(ret, Return.calculate(1/df[,2],method = 'log'))
+
+ret <- ret[-1,]
+
+plot(as.numeric(ret[,1]), as.numeric(ret[,2]))
+chart.Scatter(ret[,1],ret[,2], xlab = 'Brent return', ylab = 'RUB return', main = 'Brent and RUB return')
+abline(lm(ret[,2]~ret[,1]), col="red") # regression line (y~x) 
+cor(lag(ret[,1],0), lag(ret[,2],0), use = 'complete.obs')
+cor(lag(ret[,1],1), lag(ret[,2],0), use = 'complete.obs')
+
+plot.xts(ret)
+
+
+ret <- ret['2016::']
+chart.RollingCorrelation(ret[,1], ret[,2],width = 20, main = 'Rolling correlation of RUB/USD and Brent returns ', ylab = NA)
+chart.RollingCorrelation(lag(ret[,1],1), ret[,2],width = 20, main = 'Rolling correlation of RUB/USD and Brent returns ', ylab = NA)
+
+library(ggfortify)
+
+autoplot(ret$brent, ts.geom = 'bar', fill = 'blue')
+autoplot(ret$usd, ts.geom = 'bar', fill = 'blue')
+autoplot(ret, ts.geom = 'bar', scales = 'fixed' )

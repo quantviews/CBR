@@ -1,4 +1,4 @@
-# Салихов Марсель (quantviews.blogspot.ru)
+# Салихов Марсель (marcel.salikhov@gmail.com)
 # функции для получения данных с технических ресурсов Банка России (http://www.cbr.ru/scripts/Root.asp)
 
 if(!require(XML)){install.packages("XML")};require(XML)

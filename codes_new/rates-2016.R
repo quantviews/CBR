@@ -6,7 +6,7 @@ library(ggplot2)
 library(ggthemes)
 library(tidyr)
 
-start.date <- as.Date('2015-06-01')
+start.date <- as.Date('2016-01-01')
 end.date <- Sys.Date()
 
 #Sys.setlocale(category = "LC_ALL", locale = "Russian_Russia.1251")
@@ -38,16 +38,20 @@ buffer <- na.locf(buffer, fromLast=TRUE)
 names(buffer) <- c ('RUONIA', 'Standing depo', 'Standing repo (7 day)', 
                     'Mosprime 1w', 'Auction repo (7 days)' )
 
+tail(buffer)
+buffer$key_rate <- buffer[,'Standing depo'] + (buffer[,'Standing repo (7 day)'] - buffer[,'Standing depo'])/2
 
 df <- xtsToDf(buffer)
 df_long <- gather(df, ind, value, -date)
 head(df_long)
 p <- ggplot(data = df_long, aes(x = date, y = value, color = ind))
 p <- p+geom_step() + theme_minimal(base_size =  8)+labs(x=NULL, y = '%')+scale_colour_manual(values=hse_colours)
-p <- p+theme(legend.title = element_blank())+ theme(legend.position=c(.8, .8))
+p <- p+theme(legend.title = element_blank())+ theme(legend.position=c(.2, .1))
 p <- p+scale_y_continuous(breaks=seq(9,20, by =0.5))
-
+p<- p+guides(col = guide_legend(ncol = 2))
+p <- p+ scale_x_date(date_breaks = "1 month", date_labels = "%b")
 p
+
 ggsave(filename = paste0('fig/rates - ', end.date, '.png'),width = 14, height=6.2, units = 'cm', dpi = 300)
 ggsave(filename = paste0('fig/rates - ', end.date, '.emf'),width = 14, height=6.2, units = 'cm', dpi = 300)
 
