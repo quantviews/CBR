@@ -652,7 +652,7 @@ BauctionXML <- function(fromDate, ToDate) {
 }
 
 #Динамики сведений об остатках средств на корреспондентских счетах кредитных организаций (XMLDocument).
-OstatDynamicXML <- function(fromDate, ToDate) {
+OstatDynamicXML <- function(fromDate, ToDate){
   doc <- DailyFunction('OstatDynamicXML', fromDate, ToDate)
   df <- Doc2Df(doc, 'Ostat') 
   df[, 'DateOst']<- as.Date(as.POSIXct(df[, 'DateOst']))+1
@@ -662,6 +662,16 @@ OstatDynamicXML <- function(fromDate, ToDate) {
 }
 
 #Ставка ROISfix (XMLDocument)
+ROISfixXML <- function(fromDate, ToDate){
+  doc <- DailyFunction('ROISfixXML', fromDate, ToDate)
+  df <- Doc2Df(doc, 'rf') 
+  df[, 'D0']<- as.Date(as.POSIXct(df[, 'D0']))+1
+  df[,2:7]<- apply(df[,2:7], 2, as.numeric)
+  df <- xts((df[,-1]), order.by = df[,1])
+  return(df)
+}
+
+
 # Задолженность кредитных организаций перед Банком России по операциям прямого РЕПО (как xmlDocument)
 
 Repo_debtXML <- function(fromDate, ToDate) {
