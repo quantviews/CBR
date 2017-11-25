@@ -2,12 +2,12 @@
 
 source('codes_new/CBR_web.R')
 
-if(!require(rusquant)){nstall.packages("rusquant", repos="http://R-Forge.R-project.org")};require(rusquant)
+#if(!require(rusquant)){nstall.packages("rusquant", repos="http://R-Forge.R-project.org")};require(rusquant)
 if(!require(dygraphs)){install.packages("dygraphs")};require(dygraphs)
 if(!require(ggplot2)){install.packages("ggplot2")};require(ggplot2)
 if(!require(xts)){install.packages("xts")};require(xts)
 if(!require(ggthemes)){install.packages("ggthemes")};require(ggthemes)
-
+library(rusquant)
 
 ### some additional stuff
 hse_colours <- c('#3255a4', '#9a3324', '#ff8038', '#55688b', '#4daa50', '#55688b','#ff8038')
@@ -21,21 +21,21 @@ XtstoDf <- function(ts, ...){
 
 ### main code 
 
-start.date <- as.Date('2015-01-01')
+start.date <- as.Date('2014-01-01')
 end.date <- Sys.Date()
-
 #скачать данные 
-brent <- getSymbols('ICE.BRN', src='Finam', from=start.date, symbol.lookup = FALSE) # Брент на ICE
-getSymbols('NYMEX.CL', src='Finam', from=start.date, symbol.lookup = FALSE) # Контракт WTI на NYMEX
-getSymbols('SPFB.BR', src='Finam', from=start.date, symbol.lookup = FALSE) # Контракт Брент на MOEX
 
-brent <- ICE.BRN
+brent <- rusquant::getSymbols.Finam('ICE.BRN', from=start.date, symbol.lookup = FALSE) # Брент на ICE
+wti <- rusquant::getSymbols.Finam('NYMEX.CL', from=start.date) # Контракт WTI на NYMEX
+getSymbols('SPFB.BR', src='Finam', from=start.date, symbol.lookup = FALSE) # Контракт Брент на MOEX
 
 usd <- (GetCursDynamicXML(start.date, end.date, 'R01235')) #доллар
 eur <- (GetCursDynamicXML(start.date, end.date, 'R01239')) #евро
 basket <- (merge(usd, eur)) # объединить вместе
 basket$basket <- basket$eur * 0.45 + basket$usd * 0.55 # бивалютная корзина
 basket.m <- aggregate((basket), as.yearmon, mean, na.rm=TRUE ) # среднемесячные значения для курсов 
+copy.table(XtstoDf(basket.m))
+copy.table(XtstoDf(basket))
 basket.y <- aggregate((basket), as.year, mean, na.rm=TRUE ) # среднемесячные значения для курсов 
 
 df <- merge.xts(brent[,4], usd)
@@ -62,7 +62,7 @@ p<- p + geom_point()+stat_smooth(method = 'lm', formula = y ~ log(x))+theme_mini
 p <- p <- p+labs(x=' Brent, $/barrel', y= 'RUB/USD')
 p <- p+annotate('point', x = last.brent, y = last.usd,  colour = "red", size = 4)+
   annotate('text', x = last.brent, y = last.basket, 
-           label = paste0(' ', last.date), vjust = 2, colour= 'red')
+           label = paste0(' ', last.date), vjust = 1, colour= 'red')
 p <- p + theme(legend.title = element_blank()) + theme(legend.position=c(.8, .8))
 p<- p +scale_x_continuous(breaks=seq(30,110, by =5))+scale_y_continuous(breaks=seq(45,85, by =5))
 p <- p +  scale_colour_manual(values=hse_colours)
@@ -94,8 +94,8 @@ cor(lag(ret[,1],1), lag(ret[,2],0), use = 'complete.obs')
 plot.xts(ret)
 
 
-ret <- ret['2016::']
-chart.RollingCorrelation(ret[,1], ret[,2],width = 20, main = 'Rolling correlation of RUB/USD and Brent returns ', ylab = NA)
+ret <- ret['2015::']
+chart.RollingCorrelation(ret[,1], ret[,2],width = 20, main = 'Rolling correlation of RUB/USD and Brent returns ', ylab = NA,)
 chart.RollingCorrelation(lag(ret[,1],1), ret[,2],width = 20, main = 'Rolling correlation of RUB/USD and Brent returns ', ylab = NA)
 
 library(ggfortify)

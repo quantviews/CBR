@@ -3,6 +3,7 @@
 
 if(!require(XML)){install.packages("XML")};require(XML)
 if(!require(RCurl)){install.packages("RCurl")};require(RCurl)
+if(!require(XMLSchema)){install.packages("XMLSchema", repos = "http://www.omegahat.org/R", dependencies = TRUE, type = "source")};require(XMLSchema)
 if(!require(SSOAP)){install.packages("SSOAP", repos = "http://www.omegahat.org/R", dependencies = TRUE, type = "source")};require(SSOAP)
 if(!require(xts)){install.packages("xts")};require(xts)
 if(!require(ggplot2)){install.packages("ggplot2")};require(ggplot2)
@@ -10,7 +11,7 @@ if(!require(dplyr)){install.packages("dplyr")};require(dplyr)
 if(!require(RColorBrewer)){install.packages("RColorBrewer")};require(RColorBrewer)
 if(!require(quantmod)){install.packages("quantmod")};require(quantmod)
 if(!require(PerformanceAnalytics)){install.packages("PerformanceAnalytics")};require(PerformanceAnalytics)
-
+if(!require(tidyr)){install.packages("tidyr")};require(tidyr)
 
 # установка пакета SSOAP, если необходимо
 # install.packages("SSOAP", repos = "http://www.omegahat.org/R", dependencies = TRUE, type = "source")
@@ -501,7 +502,7 @@ FlikvidXML <- function(OnDate, ToDate){
   df[, 'D0']<- as.Date(as.POSIXct(df[, 'D0']))
   df[,2:6] <- apply(df[,2:6], 2, as.numeric )
 #    df$D0 <- df$D0+1 #прибавить один день, чтобы данные соответствовали ЦБ РФ
-   names(df) <- c('date', 'fx.interv', 'cash', 'govt', 'reserve.req', 'liq', 'ostatki')
+   #names(df) <- c('date', 'fx.interv', 'cash', 'govt', 'reserve.req', 'liq', 'ostatki')
    #    Дата проведения
    #    Интервенции Банка России на внутреннем валютном рынке
    #    Изменение наличных денег в обращении (вне Банка России)
@@ -914,6 +915,7 @@ MKRXML <- function(fromDate, ToDate){
     df <- Doc2Df(doc, 'MKR')
     df[, 'CDate']<- as.Date(as.POSIXct(df[, 'CDate']))+1
     df[, 'p1']<- as.factor(df[, 'p1'])
+    df = spread(data = df,key = p1,value = d1)
     #p1 :тип 1-MIBID, 2-MIBOR, 3-MIACR, 4-MIACR-IG, 5-MIACR-B, 6-MIACR(оборот), 7-MIACR-IG(оборот), 8-MIACR-B(оборот)
     df[,3:length(names(df))]<- apply(df[,3:length(names(df))], 2, as.numeric) #преобразовать остальные столбцы в числа
     return(df)
@@ -1132,14 +1134,18 @@ FlikvidXML <- function(OnDate, ToDate){
   df[, 'D0']<- as.Date(as.POSIXct(df[, 'D0']))
   df[,2:6] <- apply(df[,2:6], 2, as.numeric )
 #    df$D0 <- df$D0+1 #прибавить один день, чтобы данные соответствовали ЦБ РФ
-   names(df) <- c('date', 'fx.interv', 'cash', 'govt', 'reserve.req', 'liq', 'ostatki')
-   #    Дата проведения
-   #    Интервенции Банка России на внутреннем валютном рынке
-   #    Изменение наличных денег в обращении (вне Банка России)
-   #    Изменение остатков средств на счетах расширенного правительства в Банке России и прочие операции
-   #    Регулирование Банком России обязательных резервов кредитных организаций
-   #    Нетто-объем операций Банка России по предоставлению и абсорбированию ликвидности (без учета операций на внутреннем валютном рынке)
-   #    Остатки средств на корреспонденских счетах КО в Банке России на конец дня
+   #names(df) <- c('date', 'fx.interv', 'cash', 'govt', 'reserve.req', 'liq', 'ostatki')
+    # <xs:element name="D0" msdata:Caption="Дата проведения" type="xs:dateTime"/>
+    # <xs:element name="P1" msdata:Caption="Операции Банка России на внутреннем валютном рынке" type="xs:decimal" minOccurs="0"/>
+    # <xs:element name="P2" msdata:Caption="Изменение наличных денег в обращении (вне Банка России)" type="xs:decimal" minOccurs="0"/>
+    # <xs:element name="P3" msdata:Caption="Изменение остатков средств на счетах расширенного правительства в Банке России и прочие операции" type="xs:decimal" minOccurs="0"/>
+    # <xs:element name="P3_1" msdata:Caption="из них - движение средств по государственному внутреннему долгу" type="xs:decimal" minOccurs="0"/>
+    # <xs:element name="P3_2" msdata:Caption="из них - изменение задолженности банков по депозитам Федерального казначейства" type="xs:decimal" minOccurs="0"/>
+    # <xs:element name="P3_3" msdata:Caption="из них - изменение задолженности банков по операциям репо Федерального казначейства" type="xs:decimal" minOccurs="0"/>
+    # <xs:element name="P3_4" msdata:Caption="из них - операции Минфина России по покупке (продаже) иностранной валюты на внутреннем валютном рынке" type="xs:decimal" minOccurs="0"/>
+    # <xs:element name="P4" msdata:Caption="Регулирование Банком России обязательных резервов кредитных организаций" type="xs:decimal" minOccurs="0"/>
+    # <xs:element name="P5" msdata:Caption="Нетто-объем операций Банка России по предоставлению и абсорбированию ликвидности (без учета операций на внутреннем валютном рынке)" type="xs:decimal" minOccurs="0"/>
+    # <xs:element name="P6" msdata:Caption="Остатки средств на корреспонденских счетах КО в Банке России на конец дня" type="xs:decimal" minOccurs="0"/>
    return(df)
    
 }
