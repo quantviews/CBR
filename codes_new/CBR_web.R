@@ -726,7 +726,7 @@ NonMarketCreditXML <- function(OnDate, ToDate){
 }
 
 #Информация о предоставлении кредитов без обеспечения кредитным организациям (как XMLDocument)
-UnSecLoansXML <- function(DateFrom, c){
+UnSecLoansXML <- function(DateFrom, DateTo){
   doc <- SecFunction('UnSecLoansXML', DateFrom, DateTo)
   df <- Doc2Df(doc, 'UL')
   df[, 'PDate']<- as.Date(as.POSIXct(df[, 'PDate']))+1
@@ -1349,7 +1349,7 @@ NonMarketCreditXML <- function(OnDate, ToDate){
 }
 
 #Информация о предоставлении кредитов без обеспечения кредитным организациям (как XMLDocument)
-UnSecLoansXML <- function(DateFrom, c){
+UnSecLoansXML <- function(DateFrom, DateTo){
   doc <- SecFunction('UnSecLoansXML', DateFrom, DateTo)
   df <- Doc2Df(doc, 'UL')
   df[, 'PDate']<- as.Date(as.POSIXct(df[, 'PDate']))+1
